@@ -1,4 +1,5 @@
 ﻿using JwtTest.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -17,6 +18,19 @@ namespace JwtTest.Controllers
         public AuthController(IConfiguration configuration) 
         {
             _configuration = configuration;
+        }
+
+        /// <summary>
+        /// 找出使用者的個人資料
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet, Authorize]
+        public ActionResult<object> GetMe()
+        {
+            var username = User?.Identity?.Name;
+            var username2 = User?.FindFirstValue(ClaimTypes.Name);
+            var role = User?.FindFirstValue(ClaimTypes.Role);
+            return Ok(new {username, username2, role});
         }
 
         /// <summary>
@@ -64,7 +78,8 @@ namespace JwtTest.Controllers
                 //使用者的名字
                 new Claim(ClaimTypes.Name, user.Username),
                 //身分，在這裡可以是外送員、用戶、店家等等
-                new Claim(ClaimTypes.Role, "User"),
+                new Claim(ClaimTypes.Role, "User")
+                //除此之外，Claim 還可以做非常多事情，請自己去查~
             };
 
             var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_configuration.GetSection("Appsettings:Token").Value));

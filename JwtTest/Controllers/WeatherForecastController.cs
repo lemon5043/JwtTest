@@ -6,7 +6,7 @@ namespace JwtTest.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    //整個 controller 的 methods 都需授權才可使用
+    //整個 controller 的 methods 都需授權才可使用，若未授權會是401錯誤
     [Authorize]
     public class WeatherForecastController : ControllerBase
     {
@@ -28,7 +28,7 @@ namespace JwtTest.Controllers
         //允許使用者未授權即可使用這個 API
         //[HttpGet(Name = "GetWeatherForecast"), AllowAnonymous]
         
-        // role 為 admin 的人才可使用
+        // role 為 admin 的人才可使用，如果不是錯誤會是403
         [HttpGet(Name = "GetWeatherForecast"), Authorize(Roles = "Admin")]
         public IEnumerable<WeatherForecast> Get()
         {
