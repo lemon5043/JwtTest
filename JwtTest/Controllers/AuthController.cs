@@ -33,7 +33,7 @@ namespace JwtTest.Controllers
             user.PasswordHash= passwordHash;
             user.PasswordSalt= passwordSalt;
             return Ok(user);
-        }
+        } 
 
         /// <summary>
         /// 登入功能，登入成功後會丟一個 Json web token，給前端，前端需要讓這個 token 存在用戶的 cookie 或 localstorage 作為授權使用

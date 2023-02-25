@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JwtTest.Controllers
@@ -26,7 +27,9 @@ namespace JwtTest.Controllers
 
         //允許使用者未授權即可使用這個 API
         //[HttpGet(Name = "GetWeatherForecast"), AllowAnonymous]
-        [HttpGet(Name = "GetWeatherForecast")]
+        
+        // role 為 admin 的人才可使用
+        [HttpGet(Name = "GetWeatherForecast"), Authorize(Roles = "Admin")]
         public IEnumerable<WeatherForecast> Get()
         {
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
