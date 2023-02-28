@@ -50,7 +50,8 @@ namespace JwtTest.Controllers
         } 
 
         /// <summary>
-        /// 登入功能，登入成功後會丟一個 Json web token，給前端，前端需要讓這個 token 存在用戶的 cookie 或 localstorage 作為授權使用
+        /// 登入功能，登入成功後會丟一個 Json web token，給前端，前端需要讓這個 token 存在用戶的 cookie 或 localstorage 作為授權使用，
+        /// 另外也生成 refresh token
         /// </summary>
         /// <param name="request">使用者輸入的帳密</param>
         /// <returns></returns>
@@ -67,6 +68,31 @@ namespace JwtTest.Controllers
                 return  BadRequest("密碼錯誤");
             }
             string token = CreateToken(user);
+
+            //登入後除了 JWT access token，也生成一個 refresh token
+            var refreshToken = GenerateRefreshToken();
+            SetRefreshToken(refreshToken);
+
+            return Ok(token);
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<string>> RefreshToken()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            if(!user.RefreshToken.Equals(refreshToken))
+            {
+                return Unauthorized("Refresh Token 不相符");
+            } else if (user.TokenExpires < DateTime.Now)
+            {
+                return Unauthorized("Refresh Token 已過期");
+            }
+
+            string token = CreateToken(user);
+            var newRefreshToken = GenerateRefreshToken();
+            SetRefreshToken (newRefreshToken);
+
             return Ok(token);
         }
 
@@ -98,7 +124,40 @@ namespace JwtTest.Controllers
             return jwt;
         }
 
-        //將密碼附上雜湊值並加鹽
+        private RefreshToken GenerateRefreshToken()
+        {
+            var refreshToken = new RefreshToken
+            {
+                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                Expires = DateTime.Now.AddDays(7),
+                Created = DateTime.Now
+            };
+
+            return refreshToken;
+        }
+
+        private void SetRefreshToken(RefreshToken newRefreshToken)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = newRefreshToken.Expires,
+            };
+            //建立一個 refreshToken 的 cookie
+            Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
+
+            //有在資料庫裡設 foreign key 就不需要下面 3 行的code
+            user.RefreshToken = newRefreshToken.Token;
+            user.TokenCreated = newRefreshToken.Created;
+            user.TokenExpires = newRefreshToken.Expires;
+        }
+
+        /// <summary>
+        /// 將密碼附上雜湊值並加鹽
+        /// </summary>
+        /// <param name="password">使用者的密碼</param>
+        /// <param name="passwordHash">雜湊後的密碼</param>
+        /// <param name="passwordSalt">加鹽後的密碼</param>
         private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt) 
         {
             using (var hmac = new HMACSHA512())
